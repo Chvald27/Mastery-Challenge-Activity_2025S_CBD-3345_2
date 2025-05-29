@@ -1,58 +1,50 @@
-name: Advanced Manual News Workflow
+name: Advanced Manual News Workflow CI/CD Pipeline
+
+kname: CI/CD Pipeline for News App
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      name:
-        description: 'Person to greet'
-        default: 'World'
-        required: true
-        type: string
-      country:
-        description: 'Country code for news'
-        default: 'us'
-        required: false
-        type: string
 
 env:
-  NEWS_COUNTRY: ${{ github.event.inputs.country || vars.NEWS_COUNTRY }}
+  IMAGE_NAME: news-app
 
 jobs:
-  greet-and-fetch:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Greet the user
-        run: echo "Hello ${{ github.event.inputs.name }}"
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Show current date and time
-        run: date
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
 
-      - name: List files in the working directory
-        run: ls -la
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
 
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Run Python script
+      run: |
+        python news.py
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
+    - name: Upload results as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: news-output
+        path: output.txt
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+    - name: Log in to DockerHub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Display GitHub environment variables
-        uses: FranzDiebold/github-env-vars-action@v2
+    - name: Build Docker image
+      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest .
 
-      - name: Run news script with secrets
-        run: python news.py
-        env:
-          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
-
-      - name: Upload result (optional)
-        uses: actions/upload-artifact@v4
-        with:
-          name: news-output
-          path: ./output.txt
+    - name: Push Docker image
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
