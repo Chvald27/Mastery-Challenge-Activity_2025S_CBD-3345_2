@@ -1,7 +1,5 @@
 name: Advanced Manual News Workflow CI/CD Pipeline
 
-kname: CI/CD Pipeline for News App
-
 on:
   push:
     branches: [main]
