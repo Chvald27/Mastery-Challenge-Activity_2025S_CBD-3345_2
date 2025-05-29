@@ -1,13 +1,23 @@
-import requests
 import os
+import requests
 
-API_KEY = os.getenv("NEWS_API_KEY")
-COUNTRY = os.getenv("NEWS_COUNTRY", "us")
-URL = f"https://newsapi.org/v2/top-headlines?country={COUNTRY}&apiKey={API_KEY}"
+api_key = os.getenv("NEWS_API_KEY")
 
-response = requests.get(URL)
+if not api_key:
+    print("ERROR: NEWS_API_KEY is not set")
+    exit(1)
+
+url = f"https://newsapi.org/v2/top-headlines?country=us&apiKey={api_key}"
+response = requests.get(url)
+
 if response.status_code == 200:
-    articles = response.json().get("articles", [])
+    data = response.json()
+    print("📰 Raw JSON Response:")
+    print(data)  # Add this line for debugging
+
+    articles = data.get("articles", [])
+    if not articles:
+        print("No articles found.")
     with open("output.txt", "w") as f:
         for article in articles[:5]:
             f.write(f"{article['title']}\n")
